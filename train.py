@@ -1,12 +1,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, classification_report
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
+SHOW_PLOTS = False
 
 df = pd.read_csv("data/WA_Fn-UseC_-Telco-Customer-Churn.csv")
 
@@ -70,16 +72,17 @@ churn_counts = df["Churn"].value_counts()
 print("\nChurn Distribution:")
 print(churn_counts)
 
-plt.figure(figsize=(6,4))
-plt.bar(
-    churn_counts.index,
-    churn_counts.values
-)
+if SHOW_PLOTS:
+    plt.figure(figsize=(6,4))
+    plt.bar(
+        churn_counts.index,
+        churn_counts.values
+    )
 
-plt.xlabel("Churn")
-plt.ylabel("Number of Custoemrs")
-plt.title("Customer Churn Distribution")
-plt.show()
+    plt.xlabel("Churn")
+    plt.ylabel("Number of Custoemrs")
+    plt.title("Customer Churn Distribution")
+    plt.show()
 
 
 # =========================
@@ -95,16 +98,17 @@ contract_churn = pd.crosstab(
 print("\nChurn Rate by Contract:")
 print(contract_churn)
 
-plt.figure(figsize = (8,5))
-contract_churn["Yes"].plot(
-    kind="bar"
-)
+if SHOW_PLOTS:
+    plt.figure(figsize = (8,5))
+    contract_churn["Yes"].plot(
+        kind="bar"
+    )
 
-plt.xlabel("Contract type")
-plt.ylabel("Churn Rate (%)")
-plt.title("Churn Rate by Contract type")
-plt.xticks(rotation=0)
-plt.show()
+    plt.xlabel("Contract type")
+    plt.ylabel("Churn Rate (%)")
+    plt.title("Churn Rate by Contract type")
+    plt.xticks(rotation=0)
+    plt.show()
 
 
 # ==================
@@ -115,13 +119,13 @@ tenure_churn = df.groupby("Churn")["tenure"].mean()
 
 print("\nAverage Tenure by Churn:")
 print(tenure_churn)
-
-df.boxplot(column="tenure", by="Churn")
-plt.title("Tenure Distribution by Churn")
-plt.suptitle("")
-plt.xlabel("Churn")
-plt.ylabel("Tenure (Months)")
-plt.show()
+if SHOW_PLOTS:
+    df.boxplot(column="tenure", by="Churn")
+    plt.title("Tenure Distribution by Churn")
+    plt.suptitle("")
+    plt.xlabel("Churn")
+    plt.ylabel("Tenure (Months)")
+    plt.show()
 
 
 # ===========================
@@ -133,13 +137,14 @@ monthly_charges_churn = df.groupby("Churn")["MonthlyCharges"].mean()
 print("\nAverage Monthly Charges by Churn:")
 print(monthly_charges_churn)
 
-df.boxplot(column = "MonthlyCharges", by= "Churn", figsize=(7,5))
+if SHOW_PLOTS:
+    df.boxplot(column = "MonthlyCharges", by= "Churn", figsize=(7,5))
 
-plt.title("Monthly Charges Distribution by Churn")
-plt.suptitle("")
-plt.xlabel("Churn")
-plt.ylabel("Monthly Charges")
-plt.show()
+    plt.title("Monthly Charges Distribution by Churn")
+    plt.suptitle("")
+    plt.xlabel("Churn")
+    plt.ylabel("Monthly Charges")
+    plt.show()
 
 # =================================
 # 7. Churn Rate by Internet Service
@@ -159,12 +164,12 @@ plt.figure(figsize=(7,5))
 internet_churn["Yes"].plot(
     kind = "bar"
 )
-
-plt.title("Churn Rate by Internet Service")
-plt.xlabel("Internet Service")
-plt.ylabel("Churn Rate (%)")
-plt.xticks(rotation=0)
-plt.show()
+if SHOW_PLOTS:
+    plt.title("Churn Rate by Internet Service")
+    plt.xlabel("Internet Service")
+    plt.ylabel("Churn Rate (%)")
+    plt.xticks(rotation=0)
+    plt.show()
 
 
 # =========================
@@ -180,17 +185,18 @@ tech_support_churn = pd.crosstab(
 print("\nChurn Rate by Tech Support:")
 print(tech_support_churn)
 
-plt.figure(figsize=(7, 5))
+if SHOW_PLOTS:
+    plt.figure(figsize=(7, 5))
 
-tech_support_churn["Yes"].plot(
-    kind="bar"
-)
+    tech_support_churn["Yes"].plot(
+        kind="bar"
+    )
 
-plt.title("Churn Rate by Tech Support")
-plt.xlabel("Tech Support")
-plt.ylabel("Churn Rate (%)")
-plt.xticks(rotation=0)
-plt.show()
+    plt.title("Churn Rate by Tech Support")
+    plt.xlabel("Tech Support")
+    plt.ylabel("Churn Rate (%)")
+    plt.xticks(rotation=0)
+    plt.show()
 
 
 # ======================
@@ -324,3 +330,142 @@ print("ROC-AUC:", roc_auc_score(y_test, y_prob))
 
 print("\nClassification Report:")
 print(classification_report(y_test, y_pred))
+
+# =================
+# 14. Random Forest
+# =================
+
+random_forest_model = Pipeline(
+    steps=[
+        ("preprocessor", preprocessor),
+        (
+            "classifier",
+            RandomForestClassifier(
+                n_estimators=300,
+                random_state=42,
+                class_weight="balanced"
+            )
+        )
+    ]
+)
+
+# Train the model
+random_forest_model.fit(X_train , y_train)
+
+# Predictions
+rf_pred = random_forest_model.predict(X_test)
+
+# Churn Probabilities
+rf_prob = random_forest_model.predict_proba(X_test)[:, 1]
+
+# ============================
+# 15. Random Forest Evaluation
+# ============================
+
+print("\nRandom Forest Evaluation:")
+print("Accuracy:", accuracy_score(y_test, rf_pred))
+print("Precision:", precision_score(y_test, rf_pred))
+print("Recall:", recall_score(y_test, rf_pred))
+print("F1 Score:", f1_score(y_test, rf_pred))
+print("ROC-AUC:", roc_auc_score(y_test, rf_prob))
+
+print("\nClassification Report:")
+print(classification_report(y_test, rf_pred))
+
+
+# =====================
+# 16. Gradient Boosting
+# =====================
+
+gradient_boosting_model = Pipeline(
+    steps=[
+        ("preprocessor", preprocessor),
+        (
+            "classifier",
+            GradientBoostingClassifier(
+                n_estimators=200,
+                learning_rate=0.05,
+                max_depth=3,
+                random_state=42
+            )
+        )
+    ]
+)
+
+# Train the model
+gradient_boosting_model.fit(X_train, y_train)
+
+# Predictions
+gb_pred = gradient_boosting_model.predict(X_test)
+
+# Churn probabilities
+gb_prob = gradient_boosting_model.predict_proba(X_test)[:,1]
+
+# ================================
+# 17. Gradient Boosting Evaluation
+# ================================
+
+print("\nGradient Boosting Evaluation:")
+print("Accuracy:", accuracy_score(y_test, gb_pred))
+print("Precision:", precision_score(y_test, gb_pred))
+print("Recall:", recall_score(y_test, gb_pred))
+print("F1 Score:", f1_score(y_test, gb_pred))
+print("ROC-AUC:", roc_auc_score(y_test, gb_prob))
+
+print("\nClassification Report:")
+print(classification_report(y_test, gb_pred))
+
+
+# =========================
+# 18. Logistic Regression
+#     Hyperparameter Tuning
+# =========================
+
+logistic_pipeline = Pipeline(
+    steps=[
+        ("preprocessor", preprocessor),
+        ("classifier", LogisticRegression(max_iter=1000))
+    ]
+)
+
+# Hyperparameters to test
+param_grid = {
+    "classifier__C": [0.01, 0.1, 1, 10, 100]
+}
+
+grid_search = GridSearchCV(
+    estimator = logistic_pipeline,
+    param_grid=param_grid,
+    cv = 5,
+    scoring = "roc_auc",
+    n_jobs = -1
+)
+
+# Train using cross-validation
+grid_search.fit(X_train , y_train)
+
+print("\n Best Parameters:")
+print(grid_search.best_params_)
+
+print("\nBest Cross-Validation ROC_AUC:")
+print(grid_search.best_score_)
+
+
+# ========================
+# 19. Evaluate Tuned Model
+# ========================
+
+best_logistic_model = grid_search.best_estimator_
+
+tuned_pred = best_logistic_model.predict(X_test)
+tuned_prob = best_logistic_model.predict_proba(X_test)[:, 1]
+
+print("\nTuned Logistic Regression Evaluation:")
+print("Accuracy:", accuracy_score(y_test, tuned_pred))
+print("Precision:", precision_score(y_test, tuned_pred))
+print("Recall:", recall_score(y_test, tuned_pred))
+print("F1 Score:", f1_score(y_test, tuned_pred))
+print("ROC-AUC:", roc_auc_score(y_test, tuned_prob))
+
+print("\nClassification Report:")
+print(classification_report(y_test, tuned_pred))
