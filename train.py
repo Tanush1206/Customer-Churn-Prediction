@@ -248,13 +248,13 @@ print(y_test.value_counts())
 # 11. Feature Preprocessing
 # =========================
 numerical_featuring = [
-    "Senior Citizen",
+    "SeniorCitizen",
     "tenure",
-    "Monthly Charges",
+    "MonthlyCharges",
     "TotalCharges"
 ]
 
-categorical_feature = [
+categorical_features = [
     "gender",
     "Partner",
     "Dependents",
@@ -282,7 +282,7 @@ preprocessor = ColumnTransformer(
         (
             "cat",
             OneHotEncoder(handle_unknown = "ignore"),
-            categorical_feature
+            categorical_features
         )
     ]
 )
