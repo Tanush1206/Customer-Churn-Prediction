@@ -1,11 +1,12 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_predict
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, classification_report
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
 SHOW_PLOTS = False
@@ -469,3 +470,128 @@ print("ROC-AUC:", roc_auc_score(y_test, tuned_prob))
 
 print("\nClassification Report:")
 print(classification_report(y_test, tuned_pred))
+
+
+# ==========================
+# 20. Threshold Optimization
+# ==========================
+
+
+thresholds = np.arange(0.2, 0.61, 0.05)
+
+print("\nThreshold Analysis:")
+print("-" * 65)
+print(f"{"Threshold":<12}{"precision":<15}{"Recall":<15}{"F1 Score":<15}")
+print("-" * 65)
+
+for threshold in thresholds :
+    threshold_pred = (tuned_prob >= threshold).astype(int)
+
+    precision = precision_score(y_test, threshold_pred)
+    recall = recall_score(y_test , threshold_pred)
+    f1 = f1_score(y_test, threshold_pred)
+
+    print(
+        f"{threshold:<12.2f}"
+        f"{precision:<15.3f}"
+        f"{recall:<15.3f}"
+        f"{f1:<15.3f}"
+    )
+
+# =========================
+# 21. Final Churn Threshold
+# =========================
+
+FINAL_THRESHOLD = 0.25
+
+final_pred = (tuned_prob >= FINAL_THRESHOLD).astype(int)
+
+print("\nFinal Model Evaluation:")
+print("Threshold:", FINAL_THRESHOLD)
+print("Accuracy:", accuracy_score(y_test, final_pred))
+print("Precision:", precision_score(y_test, final_pred))
+print("Recall:", recall_score(y_test, final_pred))
+print("F1 Score:", f1_score(y_test, final_pred))
+print("ROC-AUC:", roc_auc_score(y_test, tuned_prob))
+
+print("\nClassification Report:")
+print(classification_report(y_test, final_pred))
+
+cm = confusion_matrix(y_test, final_pred)
+
+print("\nConfusion Matrix:")
+print(cm)
+
+
+# ==========================
+# 22. Threshold Selection
+#     Using Cross-Validation
+# ==========================
+
+
+cv_prob = cross_val_predict(
+    best_logistic_model,
+    X_train,
+    y_train,
+    cv = 5,
+    method="predict_proba",
+    n_jobs=1
+)[:,1]
+
+thresholds = np.arange(0.20, 0.61, 0.05)
+
+best_threshold = None
+best_f1 = 0
+
+print("\nCross-Validation Threshold Analysis:")
+print("-" * 65)
+print(f"{'Threshold':<12}{'Precision':<15}{'Recall':<15}{'F1 Score':<15}")
+print("-" * 65)
+
+
+for threshold in thresholds:
+    cv_pred = (cv_prob >= threshold).astype(int)
+
+    precision = precision_score(y_train, cv_pred)
+    recall = recall_score(y_train, cv_pred)
+    f1 = f1_score(y_train , cv_pred)
+
+    print(
+        f"{threshold:<12.2f}"
+        f"{precision:<15.3f}"
+        f"{recall:<15.3f}"
+        f"{f1:<15.3f}"
+    )
+
+    if f1 > best_f1:
+        best_f1 = f1
+        best_threshold = threshold
+
+print("\nBest Threshold:")
+print(best_threshold)
+
+print("\nBest Cross-Validation F1 Score:")
+print(best_f1)
+
+
+# =========================
+# 23. Final Test Evaluation
+# =========================
+
+final_threshold = best_threshold
+
+final_pred = (tuned_prob >= final_threshold).astype(int)
+
+print("\nFinal Test Evaluation:")
+print("Threshold:", final_threshold)
+print("Accuracy:", accuracy_score(y_test, final_pred))
+print("Precision:", precision_score(y_test, final_pred))
+print("Recall:", recall_score(y_test, final_pred))
+print("F1 Score:", f1_score(y_test, final_pred))
+print("ROC-AUC:", roc_auc_score(y_test, tuned_prob))
+
+print("\nClassification Report:")
+print(classification_report(y_test, final_pred))
+
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, final_pred))
