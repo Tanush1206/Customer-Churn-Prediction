@@ -47,6 +47,104 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# ====================
+# Model Explainability
+# ====================
+
+def get_risk_factors(model , customer_data, top_n = 5):
+    preprocessor = model.named_steps["preprocessor"]
+    classifier = model.named_steps["classifier"]
+
+    #Transform customer data using the same preprocessing
+    transformed_data = preprocessor.transform(customer_data)
+
+    # Customer sparse matrix to dense array if necessary
+    if hasattr(transformed_data, "toarray"):
+        transformed_data = transformed_data.toarray()
+
+    transformed_data = transformed_data[0]
+
+    # Get transformed feature names
+    feature_names = preprocessor.get_feature_names_out()
+
+    # Get logistic Regression coefficients
+    coefficients = classifier.coef_[0]
+
+    # Calculate contribution of each_feature
+    contribution = transformed_data * coefficients
+
+    explanation = pd.DataFrame({
+        "feature" : feature_names,
+        "contribution": contribution
+    })
+
+    # Positive contribution -> increases churn probability
+    risk_factors = (
+        explanation[explanation["contribution"] > 0]
+        .sort_values("contribution", ascending = False)
+        .head(top_n)
+    )
+
+    # Negative contribution -> decrease churn probability
+    protective_factors = (
+        explanation[explanation["contribution"] < 0]
+        .sort_values("contribution", ascending=True)
+        .head(top_n)
+    )
+
+    return risk_factors, protective_factors
+
+def clean_feature_name(feature_name):
+    feature_name = feature_name.replace("num__", "")
+    feature_name = feature_name.replace("cat__", "")
+
+    feature_name = feature_name.replace("SeniorCitizen", "Senior Citizen")
+    feature_name = feature_name.replace("MonthlyCharges", "Monthly Charges")
+    feature_name = feature_name.replace("TotalCharges", "Total Charges")
+    feature_name = feature_name.replace("tenure", "Tenure")
+
+    feature_name = feature_name.replace(
+        "Contract_Month-to-month",
+        "Month-to-month contract"
+    )
+    feature_name = feature_name.replace(
+        "Contract_One year",
+        "One year contract"
+    )
+    feature_name = feature_name.replace(
+        "Contract_Two year",
+        "Two year contract"
+    )
+    feature_name = feature_name.replace(
+        "InternetService_Fibre optic",
+        "Fibre optic internet"
+    )
+    feature_name = feature_name.replace(
+        "InternetService_DSL",
+        "DSL internet"
+    )
+    feature_name = feature_name.replace(
+        "PaymentMethod_Electronic check",
+        "Electronic check payment"
+    )
+    feature_name = feature_name.replace(
+        "PaymentMethod_Mailed Check",
+        "Mailed check payment"
+    )
+    feature_name = feature_name.replace(
+        "PaymentMethod_Bank Transfer (automatic)",
+        "Automatic Bank Transfer"
+    )
+    feature_name = feature_name.replace(
+        "PaymentMethod_Credit Card (automatic)",
+        "Automatic Credit Card payment"
+    )
+
+    feature_name = feature_name.replace("_Yes", " — Yes")
+    feature_name = feature_name.replace("_No", " — No")
+
+    return feature_name
+
 # =====================
 # 1. Page Configuration
 # =====================
@@ -138,18 +236,18 @@ with col2 :
 
     multiple_lines = st.selectbox(
         "Multiple Lines",
-        ["Yes", "No"]
+        ["Yes", "No", "No phone service"]
     )
 
     internet_service = st.selectbox(
         "Internet Service",
-        ["DSL", "Fibre Optic", "No"]
+        ["DSL", "Fibre optic", "No"]
     )
 
 with col3 :
     contract = st.selectbox(
         "Contract",
-        ["Month-to-Month", "One year", "Two year"]
+        ["Month-to-month", "One year", "Two year"]
     )
 
     paperless_billing = st.selectbox(
@@ -163,7 +261,7 @@ with col3 :
             "Electronic check",
             "Mailed Check",
             "Bank transfer (automatic)",
-            "Credit Card (automatic)"
+            "Credit card (automatic)"
         ]
     )
 
@@ -334,3 +432,37 @@ if st.button("🔮 Predict Churn", use_container_width=True):
             "The customer currently shows a relatively low "
             "likelihood of churn."
         )
+
+    risk_factors, protective_factors = get_risk_factors(
+        model,
+        customer_data
+    )
+
+    st.markdown(
+        '<div class="section-title">🔍 Why this prediction?</div>',
+        unsafe_allow_html = True
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### 🔴 Factors increasing churn risk")
+        if len(risk_factors) > 0:
+            for _, row in risk_factors.iterrows():
+                feature = clean_feature_name(row["feature"])
+
+                st.write(f"• **{feature}**")
+        else:
+            st.write("No strong risk factors identified.")
+
+    with col2 :
+        st.markdown("### 🟢 Factors reducing churn risk")
+
+        if len(protective_factors) > 0:
+            for _, row in protective_factors.iterrows() :
+                feature = clean_feature_name(row["feature"])
+
+                st.write(f"• **{feature}**")
+
+        else:
+            st.write("No strong protective factors identified.")
