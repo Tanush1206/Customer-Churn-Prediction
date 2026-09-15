@@ -608,7 +608,6 @@ joblib.dump(
     best_logistic_model,
     "models/churn_model.joblib"
 )
-
 print("\nModel saved successfully!")
 print("Path: models/churn_model.joblib")
 
@@ -619,5 +618,3 @@ joblib.dump(
 )
 print("Threshold saved successfully!")
 print("THreshold:", final_threshold)
-
-
