@@ -1,3 +1,4 @@
+import joblib, os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -595,3 +596,28 @@ print(classification_report(y_test, final_pred))
 
 print("\nConfusion Matrix:")
 print(confusion_matrix(y_test, final_pred))
+
+
+# ====================
+# 24. Save Final Model
+# ====================
+
+os.makedirs("models", exist_ok = True)
+
+joblib.dump(
+    best_logistic_model,
+    "models/churn_model.joblib"
+)
+
+print("\nModel saved successfully!")
+print("Path: models/churn_model.joblib")
+
+# Save the classification threshold
+joblib.dump(
+    final_threshold,
+    "models/churn_threshold.joblib"
+)
+print("Threshold saved successfully!")
+print("THreshold:", final_threshold)
+
+
