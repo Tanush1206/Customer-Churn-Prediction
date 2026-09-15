@@ -2,6 +2,50 @@ import streamlit as st
 import pandas as pd
 import joblib
 
+# =========================
+# Custom Styling
+# =========================
+
+st.markdown("""
+<style>
+
+    .main-title {
+        font-size: 42px;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .subtitle {
+        font-size: 18px;
+        color: #9ca3af;
+        margin-bottom: 25px;
+    }
+
+    .section-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin-top: 20px;
+        margin-bottom: 15px;
+    }
+
+    .risk-high {
+        padding: 18px;
+        border-radius: 10px;
+        background-color: #3f2020;
+        border: 1px solid #7f1d1d;
+        margin-top: 20px;
+    }
+
+    .risk-low {
+        padding: 18px;
+        border-radius: 10px;
+        background-color: #17351f;
+        border: 1px solid #166534;
+        margin-top: 20px;
+    }
+
+</style>
+""", unsafe_allow_html=True)
 
 # =====================
 # 1. Page Configuration
@@ -31,10 +75,16 @@ model, threshold = load_model()
 # 3. App Header
 # =============
 
-st.title("📊 Customer Churn Predictor")
-st.write(
-    "Predict whether a customer is likely to churn based on"
-    "their account and service information"
+st.markdown(
+    '<div class="main-title">📊 Customer Churn Prediction</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="subtitle">'
+    'AI-powered customer churn risk prediction using machine learning.'
+    '</div>',
+    unsafe_allow_html=True
 )
 
 st.divider()
@@ -44,7 +94,10 @@ st.divider()
 # 4. Customer Information
 # =======================
 
-st.subheader("Customer Information")
+st.markdown(
+    '<div class="section-title">👤 Customer Information</div>',
+    unsafe_allow_html=True
+)
 
 col1 , col2, col3 = st.columns(3)
 
@@ -119,7 +172,10 @@ with col3 :
 # 5. Services
 # ===========
 
-st.subheader("Service")
+st.markdown(
+    '<div class="section-title">🛠️ Services</div>',
+    unsafe_allow_html=True
+)
 
 col1, col2, col3 = st.columns(3)
 
@@ -161,7 +217,10 @@ with col3:
 # 6. Billing Information
 # ======================
 
-st.subheader("Billing Information")
+st.markdown(
+    '<div class="section-title">💳 Billing Information</div>',
+    unsafe_allow_html=True
+)
 
 col1, col2 = st.columns(2)
 
@@ -176,7 +235,7 @@ with col1 :
 
 with col2 :
     total_charges = st.number_input(
-        "Monthly Charges",
+        "Total Charges",
         min_value = 0.0,
         max_value = 10000.0,
         value= 840.0,
@@ -217,12 +276,16 @@ customer_data = pd.DataFrame({
 
 st.divider()
 
+
 if st.button("🔮 Predict Churn", use_container_width=True):
     churn_probability = model.predict_proba(customer_data)[0,1]
 
     prediction = int(churn_probability >= threshold)
 
-    st.subheader("Prediction Result")
+    st.markdown(
+        '<div class="section-title">🔮 Prediction Result</div>',
+        unsafe_allow_html=True
+    )
 
     col1, col2 = st.columns(2)
 
@@ -231,6 +294,10 @@ if st.button("🔮 Predict Churn", use_container_width=True):
             "Churn Probability",
             f"{churn_probability:.1%}"
         )
+        st.progress(
+            float(churn_probability),
+            text=f"Churn probability: {churn_probability:.1%}"
+        )
 
     with col2:
         st.metric(
@@ -238,18 +305,31 @@ if st.button("🔮 Predict Churn", use_container_width=True):
             f"{threshold:.0%}"
         )
 
-    if prediction == 1 :
-        st.error(
-            "⚠️ High Churn Risk — Customer is likely to churn."
+    if prediction == 1:
+
+        st.markdown(
+            '<div class="risk-high">'
+            '<h3>⚠️ High Churn Risk</h3>'
+            '<p>This customer is likely to churn based on the model prediction.</p>'
+            '</div>',
+            unsafe_allow_html=True
         )
+
         st.write(
-            "Consider proactive customer retention measures "
-            "such as personalized offers or support."
+            "Consider proactive retention measures such as "
+            "personalized offers, customer support, or contract incentives."
         )
+
     else:
-        st.success(
-            "✅ Low Churn Risk — Customer is unlikely to churn."
+
+        st.markdown(
+            '<div class="risk-low">'
+            '<h3>✅ Low Churn Risk</h3>'
+            '<p>This customer is unlikely to churn based on the model prediction.</p>'
+            '</div>',
+            unsafe_allow_html=True
         )
+
         st.write(
             "The customer currently shows a relatively low "
             "likelihood of churn."
